@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  backend:
+    image: golang:1.13.3
+    volumes:
+      - ./server:/go/src/server
+    ports:
+      - "3000:3000"
+    working_dir: /go/src/server
+    command: go run -mod=vendor main.go
+
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./web/www/:/var/www
+      - ./web/nginx/conf.d/:/etc/nginx/conf.d

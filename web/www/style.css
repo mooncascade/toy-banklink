@@ -1,0 +1,21 @@
+.payment-data{
+    padding: 15px;
+}
+#banks-list
+{
+    padding: 10px;
+}
+.bank
+{
+    margin-left: 5px;
+    margin-right: 5px;
+    width: auto;
+    padding: 15px;
+}
+.card-title{
+    padding: 15px;
+    padding-bottom: 10px;
+}
+.card-subtitle{
+    padding-left: 15px;
+}

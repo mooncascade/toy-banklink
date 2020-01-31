@@ -1,0 +1,252 @@
+openapi: "3.0.2"
+info:
+  title: "Toy banklink"
+  version: "1.0"
+servers:
+  - url: "http://localhost:3000/api/"
+paths:
+  /payment/{uuid}:
+    get:
+      summary: "Gets payment data by UUID"
+      parameters:
+        - in: path
+          name: uuid
+          schema:
+            type: string
+          required: true
+          description: "Prepared payment UUID"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentDataResponse"
+        402:
+          $ref: "#/components/responses/BadRequest"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+  /payment:
+    post:
+      summary: "Posts a new payment"
+      requestBody:
+        description: |
+          Posts a new payment to the database with the provided price and receiver.
+
+          Returns a new UUID which can be used to start the payment process.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostPaymentRequest"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostPaymentResponse"
+        402:
+          $ref: "#/components/responses/BadRequest"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+  /banks:
+    get:
+      summary: "Gets a list of banks"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetBanksResponse"
+        402:
+          $ref: "#/components/responses/BadRequest"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+  /callback:
+    get:
+      summary: "Bank callback endpoint"
+      parameters:
+        - in: query
+          name: payment_id
+          schema:
+            type: string
+          required: true
+          description: "Truelayer Payment ID that triggers the callback"
+      responses:
+        302:
+          description: "Redirects to payment details page"
+        402:
+          $ref: "#/components/responses/BadRequest"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+  /pay:
+    post:
+      summary: "Initiates a new payment and returns authentication URL"
+      requestBody:
+        description: |
+          Initiates a new payment in Truelayer payment API and connects it with the prepared UUID in the database.  
+
+          Returns URL where payment process can be done
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentRequest"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePaymentResponse"
+        402:
+          $ref: "#/components/responses/BadRequest"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  responses:
+    BadRequest:
+      description: "Bad request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: "Internal server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Something went wrong!"
+    PostPaymentRequest:
+      type: object
+      required:
+        - receiver_id
+        - amount
+      properties:
+        receiver_id:
+          type: string
+          example: "40404040404"
+          description: "Money Receiver ID (random ID can be provided in sandbox mode)"
+        amount:
+          type: integer
+          format: int64
+          example: 10000
+          description: "Money sum in cents"
+    PostPaymentResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          example: "d50b3f9e-accc-4415-88cf-61b7df390e87"
+          description: "Payment UUID which can be used to start the payment process"
+    GetBanksResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "ob-sandbox-natwest"
+                description: "Bank ID"
+              logo:
+                type: string
+                example: "https://bankimages.com/logo.svg"
+                description: URL of the logo
+              icon:
+                type: string
+                example: "https://bankimages.com/icon.svg"
+                description: URL of the logo icon
+              displayable_name:
+                type: string
+                example: "Natwest Sandbox"
+                description: "Displayable name of the bank"
+          description: "Array of returned banks"
+    CreatePaymentRequest:
+      type: object
+      properties:
+        uuid:
+          type: string
+          example: d50b3f9e-accc-4415-88cf-61b7df390e87
+          description: "UUID which was retrieved from post payment endpoint"
+        amount:
+          type: integer
+          format: int64
+          example: 10000
+          description: "Sum of money amount in cents"
+        currency:
+          type: string
+          example: "GBP"
+          description: "ISO 4217 alpha-3 currency code of the account"
+        beneficiary_name:
+          type: string
+          example: "Demo user"
+          description: "Name of payee account holder"
+        beneficiary_reference:
+          type: string
+          example: "1234"
+          description: "Reference information which is displayed on the payee’s bank account statement"
+        beneficiary_sort_code:
+          type: string
+          example: "102030"
+          description: "Sort code of payee account"
+        beneficiary_account_number:
+          type: string
+          example: "12345678"
+          description: "Number of payee account"
+        remitter_reference:
+          type: string
+          example: "re reference"
+          description: "Reference of API client to describe and uniquely identify this transaction"
+        remitter_provider_id:
+          type: string
+          example: "ob-sandbox-natwest"
+          description: "ID of the selected bank"
+    CreatePaymentResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          simp_id:
+            type: string
+            example: "c45d38a6-2384-49aa-98ab-60134a50a5d7"
+            description: "Truelayer UUID of the payment"
+          auth_uri:
+            type: string
+            example: "https://pay.truelayer.com/?payment_id=c45d38a6-2384-49aa-98ab-60134a50a5d7"
+            description: "Authentication URL for the payment process"
+    GetPaymentDataResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          example: "9138874b-6dcf-4c58-9d1a-d389b4304b6d"
+          description: "Prepared UUID of the payment"
+        receiver_id:
+          type: string
+          example: "0912330123098"
+          description: "Receiver prepared ID"
+        amount:
+          type: integer
+          format: int64
+          example: 10000
+          description: Sum of money in cents
+        status:
+          type: string
+          example: "executed"
+          description: "Payment status (executed, unprocessed, etc..)"
+        truelayer_payment_id:
+          type: string
+          example: "c45d38a6-2384-49aa-98ab-60134a50a5d7"
+          description: Truelayer payment UUID
